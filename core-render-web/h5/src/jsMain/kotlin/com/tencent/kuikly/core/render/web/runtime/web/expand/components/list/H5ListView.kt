@@ -62,7 +62,7 @@ class H5ListView : IListElement {
     // Whether paging is enabled
     private var pagingEnabled = false
     // enable bounce effect, support Android Webview 63+ && iOS Safari 16+
-    private var bounceEnabled = false
+    private var bounceEnabled = true
     // enable nest scroll effect
     private var nestScrollEnabled = false
     // Whether in pre-pull-down state
@@ -234,14 +234,49 @@ class H5ListView : IListElement {
                 isScrolling = 0
             }
         }
-        if ((scrollDirection == SCROLL_DIRECTION_COLUMN && isScrolling == 1) ||
-            (scrollDirection == SCROLL_DIRECTION_ROW && isScrolling == 0)) {
-            // Scroll direction matches set direction, prevent bubbling to avoid affecting parent node's scroll events
-            it.stopPropagation()
+
+        if (!bounceEnabled) {
+            // Prevent default behavior when scrolling in the intended direction to avoid iOS bounce effect
+            if ((scrollDirection == SCROLL_DIRECTION_COLUMN && isScrolling == 1) ||
+                (scrollDirection == SCROLL_DIRECTION_ROW && isScrolling == 0)) {
+                // Scroll direction matches set direction, prevent bubbling to avoid affecting parent node's scroll events
+                it.stopPropagation()
+
+                // Check if at boundary and trying to scroll beyond it
+                val isAtTop = ele.scrollTop <= 0
+                val isAtBottom = ele.scrollTop + ele.clientHeight >= ele.scrollHeight
+                val isAtLeft = ele.scrollLeft <= 0
+                val isAtRight = ele.scrollLeft + ele.clientWidth >= ele.scrollWidth
+
+                // For vertical scrolling
+                if (scrollDirection == SCROLL_DIRECTION_COLUMN) {
+                    // Prevent bounce at top when pulling down (deltaY > 0)
+                    // Prevent bounce at bottom when pulling up (deltaY < 0)
+                    // Always prevent if not at boundary or if has refresh child at top
+                    if ((isAtTop && deltaY > 0 && !hasRefreshChild) ||
+                        (isAtBottom && deltaY < 0) ||
+                        (!isAtTop && !isAtBottom)) {
+                        it.preventDefault()
+                    }
+                }
+                // For horizontal scrolling
+                else if (scrollDirection == SCROLL_DIRECTION_ROW) {
+                    if ((isAtLeft && deltaX > 0) ||
+                        (isAtRight && deltaX < 0) ||
+                        (!isAtLeft && !isAtRight)) {
+                        it.preventDefault()
+                    }
+                }
+            }
         }
+
         // If current scroll distance is 0, starting to drag down, contains pull-to-refresh child node,
         // and is vertical scrolling, handle pull-to-refresh logic, deltaY > 0 means pulling down
         if (isPrePullDown && deltaY > 0 && hasRefreshChild && isScrolling == 1) {
+            if (!bounceEnabled) {
+                // Prevent default for pull-to-refresh
+                it.preventDefault()
+            }
             // Set end position before drag ends
             touchEndY = eventsParams["y"].unsafeCast<Float>()
             // Set element's translate
@@ -323,7 +358,7 @@ class H5ListView : IListElement {
                 return@addEventListener
             }
             handleTouchStart(it as TouchEvent)
-        }, json("passive" to true))
+        }, json("passive" to bounceEnabled))
 
         // Move event
         ele.addEventListener(DRAG_MOVE_EVENT, {
@@ -336,7 +371,7 @@ class H5ListView : IListElement {
                 return@addEventListener
             }
             handleTouchMove(it as TouchEvent)
-        }, json("passive" to (!pagingEnabled && !nestScrollEnabled)))
+        }, json("passive" to (!pagingEnabled && !nestScrollEnabled && bounceEnabled)))
 
         // End dragging
         ele.addEventListener(DRAG_END_EVENT, {
