@@ -1,0 +1,9 @@
+{
+  "version": "1.0.0",
+  "generatedAt": "2026-01-06T13:01:07.981Z",
+  "files": [
+    "kotlin-stdlib.bundle.js",
+    "runtime.bundle.js"
+  ],
+  "fileCount": 2
+}

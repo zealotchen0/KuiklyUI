@@ -1,0 +1,5 @@
+node_modules/
+dist/lib/
+dist/business/
+*.log
+.DS_Store

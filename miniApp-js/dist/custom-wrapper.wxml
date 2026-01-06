@@ -1,0 +1,4 @@
+<import src="./base.wxml"/>
+<block wx:for="{{i.cn}}" wx:key="sid">
+  <template is="{{xs.a(0, item.nn, '')}}" data="{{i:item,c:1}}" />
+</block>
