@@ -13,6 +13,7 @@ buildscript {
         google()
         mavenCentral()
         mavenLocal()
+        maven("https://central.sonatype.com/repository/maven-snapshots/")
     }
     dependencies {
         classpath(BuildPlugin.kotlin)
@@ -26,6 +27,7 @@ allprojects {
         google()
         mavenCentral()
         mavenLocal()
+        maven("https://central.sonatype.com/repository/maven-snapshots/")
     }
     configurations.all {
         resolutionStrategy.dependencySubstitution {

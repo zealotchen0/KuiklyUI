@@ -1,4 +1,9 @@
+@file:JsExport
+
 package com.tencent.kuikly.core.render.web.expand
+
+import kotlin.js.JsExport
+import kotlin.js.JsName
 
 import com.tencent.kuikly.core.render.web.IKuiklyRenderExport
 import com.tencent.kuikly.core.render.web.KuiklyRenderView
@@ -14,6 +19,9 @@ typealias KuiklyRenderViewPendingTask = (KuiklyRenderView) -> Unit
 /**
  * Internal delegate implementation class for kuikly, defines interfaces available for business extension
  */
+
+@JsExport
+@JsName("KuiklyRenderViewDelegatorDelegate")
 interface KuiklyRenderViewDelegatorDelegate {
     /**
      * For business to register renderView and shadow

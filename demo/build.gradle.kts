@@ -33,6 +33,8 @@ kotlin {
         browser {
             webpackTask {
                 outputFileName = "${moduleName}.js" // 最后输出的名字
+                // 增加 Node.js 内存限制以支持大量页面打包
+                nodeArgs.add("--max-old-space-size=8192") // 8GB 内存
             }
 
             commonWebpackConfig {
@@ -141,6 +143,7 @@ kotlin {
 
 ksp {
     arg("pageName", getPageName())
+    arg("pageNameList", getPageNameList())
     arg(Output.KEY_PACK_LOCAL_JS_BUNDLE, packLocalJsBundle())
 }
 
@@ -186,6 +189,10 @@ fun getPageName(): String {
     return project.properties["pageName"] as? String ?: ""
 }
 
+fun getPageNameList(): String {
+    return project.properties["pageNameList"] as? String ?: ""
+}
+
 fun packLocalJsBundle(): String {
     return (project.properties[Output.KEY_PACK_LOCAL_JS_BUNDLE] as? String) ?: ""
 }
@@ -207,7 +214,7 @@ kuikly {
     // JS 产物配置
     js {
         // 构建产物名，与 KMM 插件 webpackTask#outputFileName 一致
-        outputName("nativevue2")
+        outputName(Output.name)
         // 可选：分包构建时的页面列表，如果为空则构建全部页面
         // addSplitPage("route","home")
     }

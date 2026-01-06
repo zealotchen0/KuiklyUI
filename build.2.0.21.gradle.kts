@@ -11,10 +11,12 @@ buildscript {
         google()
         mavenCentral()
         mavenLocal()
+        maven("https://central.sonatype.com/repository/maven-snapshots/")
     }
     dependencies {
         classpath(BuildPlugin.kotlin)
         classpath(BuildPlugin.android)
+        classpath(BuildPlugin.kuikly)
     }
 }
 
@@ -23,6 +25,7 @@ allprojects {
         google()
         mavenCentral()
         mavenLocal()
+        maven("https://central.sonatype.com/repository/maven-snapshots/")
     }
 }
 

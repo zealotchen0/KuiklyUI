@@ -110,7 +110,7 @@ echo -e "      找到 ${YELLOW}$BUNDLE_COUNT${NC} 个 bundle 文件"
 echo ""
 
 # 步骤 4: 清理目标目录并复制
-echo -e "${GREEN}[4/4]${NC} 清理目标目录并复制 bundle 文件..."
+echo -e "${GREEN}[4/5]${NC} 清理目标目录并复制 bundle 文件..."
 
 # 创建目标目录
 TARGET_BUNDLES_DIR="$H5APP_JS_DIR/src/bundles"
@@ -152,15 +152,38 @@ if [ -d "$RESOURCES_SOURCE_DIR" ]; then
 fi
 
 echo ""
+
+# 步骤 5: 生成 manifest.json
+echo -e "${GREEN}[5/5]${NC} 生成 bundle manifest 文件..."
+
+MANIFEST_GENERATOR="$H5APP_JS_DIR/scripts/generate-manifest.js"
+
+if [ ! -f "$MANIFEST_GENERATOR" ]; then
+  echo -e "${RED}❌ 错误: 找不到 manifest 生成脚本${NC}"
+  echo -e "${RED}   预期位置: $MANIFEST_GENERATOR${NC}"
+  exit 1
+fi
+
+# 运行 manifest 生成脚本
+cd "$H5APP_JS_DIR"
+if node scripts/generate-manifest.js; then
+  echo -e "      ✅ manifest.json 生成成功"
+else
+  echo -e "${RED}❌ 生成 manifest.json 失败${NC}"
+  exit 1
+fi
+
+echo ""
 echo -e "${GREEN}========================================${NC}"
 echo -e "${GREEN}✨ 完成！${NC}"
 echo -e "${GREEN}========================================${NC}"
 echo ""
 echo -e "📦 已复制 ${YELLOW}$COPIED_COUNT${NC} 个 bundle 文件到:"
 echo -e "   ${BLUE}$TARGET_BUNDLES_DIR${NC}"
+echo -e "📋 已生成 ${YELLOW}manifest.json${NC} (包含 bundle 文件列表)"
 echo ""
 echo -e "${YELLOW}💡 提示:${NC}"
 echo -e "   1. Bundle 文件已复制到 ${BLUE}src/bundles/${NC} 目录"
-echo -e "   2. 在 HTML 中使用 ${BLUE}<script src=\"bundles/页面名.bundle.js\"></script>${NC} 引入"
+echo -e "   2. ${BLUE}manifest.json${NC} 已自动生成，支持动态 bundle 加载"
 echo -e "   3. 运行 ${BLUE}npm run dev${NC} 启动开发服务器"
 echo ""

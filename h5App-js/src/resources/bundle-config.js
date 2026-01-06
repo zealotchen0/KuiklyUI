@@ -1,47 +1,45 @@
 /**
  * Bundle 依赖配置文件
- * 定义了公共依赖的加载顺序和页面bundle的依赖关系
+ * 
+ * 使用动态发现模式：自动扫描 bundles 目录下的文件
+ * manifest.json 由 generate-manifest.js 脚本自动生成
  */
 window.BundleConfig = {
   /**
-   * 公共依赖的加载顺序
-   * 按照依赖关系从底层到上层排序
+   * 动态发现时的加载顺序规则（正则表达式）
+   * 按照数组顺序匹配并排序，未匹配的文件放在最后
    */
-  commonDependencies: [
-    // === Webpack 运行时 ===
-    'runtime.bundle.js',
+  dynamicLoadingOrder: [
+    // 1. Webpack 运行时（必须最先）
+    /^runtime\.bundle\.js$/,
     
-    // === Kotlin 标准库核心（必须最先加载）===
-    // 'kotlin-stdlib.kotlin_k.bundle.js',
-    'kotlin-stdlib.kotlin_kotlin-kotlin-stdlib_k.bundle.js',
+    // 2. Kotlin 核心（必须在标准库前）
+    /^kotlin-stdlib\.kotlin_k\.bundle\.js$/,
+    /^kotlin-stdlib\.kotlin_kotlin-kotlin-stdlib_k\.bundle\.js$/,
     
-    // === Kotlin 标准库基础模块（按依赖关系排序）===
-    'kotlin-stdlib.kotlin_kotlin-kotlin-stdlib_kotlin_C.bundle.js',
-    'kotlin-stdlib.kotlin_kotlin-kotlin-stdlib_kotlin_e.bundle.js',
-    'kotlin-stdlib.kotlin_kotlin-kotlin-stdlib_kotlin_l.bundle.js',
-    'kotlin-stdlib.kotlin_kotlin-kotlin-stdlib_kotlin_i.bundle.js',
-    'kotlin-stdlib.kotlin_kotlin-kotlin-stdlib_kotlin_text_A.bundle.js',
-    'kotlin-stdlib.kotlin_kotlin-kotlin-stdlib_kotlin_collections_M.bundle.js',
-    'kotlin-stdlib.kotlin_kotlin-kotlin-stdlib_kotlin_ch.bundle.js',
-    'kotlin-stdlib.kotlin_kotlin-kotlin-stdlib_kotlin_co.bundle.js',
-    'kotlin-stdlib.kotlin_kotlin-kotlin-stdlib_kotlin_p.bundle.js',
+    // 3. Kotlin 标准库基础
+    /^kotlin-stdlib\.kotlin_kotlin-kotlin-stdlib_kotlin_[A-Za-z]\.bundle\.js$/,
     
-    // === KuiklyCore 基础模块（按依赖关系排序）===
-    'kotlin-stdlib.kotlin_kuiklycore-core_com_tencent_kuikly_core_module_B.bundle.js',
-    'kotlin-stdlib.kotlin_kuiklycore-core_com_tencent_kuikly_core_b.bundle.js',
-    'kotlin-stdlib.kotlin_kuiklycore-core_com_tencent_kuikly_core_e.bundle.js',
-    'kotlin-stdlib.kotlin_kuiklycore-core_com_tencent_kuikly_core_t.bundle.js',
-    'kotlin-stdlib.kotlin_kuiklycore-core_com_tencent_kuikly_core_reactive_O.bundle.js',
-    'kotlin-stdlib.kotlin_kuiklycore-core_com_tencent_kuikly_core_l.bundle.js',
-    'kotlin-stdlib.kotlin_kuiklycore-core_com_tencent_kuikly_core_n.bundle.js',
-    'kotlin-stdlib.kotlin_kuiklycore-core_com_tencent_kuikly_core_S.bundle.js',
+    // 4. Kotlin 标准库扩展（collections, text 等）
+    /^kotlin-stdlib\.kotlin_kotlin-kotlin-stdlib_kotlin_(collections|text|ranges)_/,
     
-    // === KuiklyCore 视图模块（最后加载）===
-    // 'kotlin-stdlib.kotlin_kuiklycore-core_com_tencent_kuikly_core_views_I.bundle.js',
-    // 'kotlin-stdlib.kotlin_kuiklycore-core_com_tencent_kuikly_core_views_W.bundle.js',
-    'kotlin-stdlib.kotlin_kuiklycore-core_com_tencent_kuikly_core_views_R.bundle.js',
-
-    'kotlin-stdlib.kotlin_nativevue2_c.bundle.js'
+    // 5. Kotlin 标准库其他模块
+    /^kotlin-stdlib\.kotlin_kotlin-kotlin-stdlib_kotlin_[a-z]{2,}\.bundle\.js$/,
+    
+    // 6. KuiklyCore 基础模块
+    /^kotlin-stdlib\.kotlin_KuiklyCore-core_com_tencent_kuikly_core_[a-z]\.bundle\.js$/,
+    
+    // 7. KuiklyCore reactive 模块
+    /^kotlin-stdlib\.kotlin_KuiklyCore-core_com_tencent_kuikly_core_reactive/,
+    
+    // 8. KuiklyCore layout 模块
+    /^kotlin-stdlib\.kotlin_KuiklyCore-core_com_tencent_kuikly_core_layout/,
+    
+    // 9. KuiklyCore 其他核心模块
+    /^kotlin-stdlib\.kotlin_KuiklyCore-core_com_tencent_kuikly_core_[A-Z]\.bundle\.js$/,
+    
+    // 10. KuiklyCore views 模块（最后）
+    /^kotlin-stdlib\.kotlin_KuiklyCore-core_com_tencent_kuikly_core_views/
   ],
   
   /**

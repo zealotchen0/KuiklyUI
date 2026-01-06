@@ -1,4 +1,8 @@
+@file:JsExport
 package com.tencent.kuikly.core.render.web
+
+import kotlin.js.JsExport
+import kotlin.js.JsName
 
 import com.tencent.kuikly.core.render.web.exception.ErrorReason
 import com.tencent.kuikly.core.render.web.export.IKuiklyRenderModuleExport
@@ -9,11 +13,7 @@ import com.tencent.kuikly.core.render.web.export.KuiklyRenderBaseModule
 import com.tencent.kuikly.core.render.web.ktx.SizeI
 import org.w3c.dom.Element
 
-/**
- * Represents the root View interface for Kuikly pages. Views implementing this interface are considered root Views
- * for Kuikly pages.
- * External interactions and communication with Kuikly pages are handled through Views implementing this interface.
- */
+
 interface IKuiklyRenderView {
     // View container
     val view: Element
@@ -138,6 +138,8 @@ interface IKuiklyRenderContext {
  * Get exposed classes for Kuikly pages, which can be exposed to Kuikly side are:
  * IKuiklyRenderViewExport, IKuiklyRenderModuleExport and IKuiklyRenderShadowExport
  */
+@JsExport
+@JsName("IKuiklyRenderExport")
 interface IKuiklyRenderExport: IKuiklyRenderViewPropExternalHandler {
     /**
      * Register and expose module to kuikly pages

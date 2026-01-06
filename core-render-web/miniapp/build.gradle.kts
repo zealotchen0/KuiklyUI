@@ -55,7 +55,7 @@ kotlin {
         val jsMain by getting {
             dependencies {
                 // Import js standard library
-                api(project(":core-render-web:base"))
+                implementation(project(":core-render-web:base"))
             }
         }
     }

@@ -1,4 +1,9 @@
+@file:JsExport
+
 package com.tencent.kuikly.core.render.web.runtime.web.expand
+
+import kotlin.js.JsExport
+import kotlin.js.JsName
 
 import com.tencent.kuikly.core.render.web.IKuiklyRenderContext
 import com.tencent.kuikly.core.render.web.IKuiklyRenderExport
@@ -48,9 +53,8 @@ import com.tencent.kuikly.core.render.web.utils.Log
 import kotlinx.browser.document
 import kotlinx.browser.window
 
-/**
- * Host project can simplify KuiklyRenderCore integration through this class, which is integrated at page granularity
- */
+@JsExport
+@JsName("KuiklyRenderViewDelegator")
 class KuiklyRenderViewDelegator(private val delegate: KuiklyRenderViewDelegatorDelegate) {
     // The root renderView of the kuikly page
     private var renderView: KuiklyRenderView? = null

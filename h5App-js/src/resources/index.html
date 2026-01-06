@@ -140,7 +140,7 @@
 <!-- Preload critical resources -->
 <link rel="preload" href="libs/KuiklyCore-render-web-h5.js" as="script">
 <link rel="preload" href="bundles/runtime.bundle.js" as="script">
-<link rel="preload" href="bundles/kotlin-stdlib.kotlin_kotlin-kotlin-stdlib_k.bundle.js" as="script">
+<!-- <link rel="preload" href="bundles/kotlin-stdlib.kotlin_k.bundle.js" as="script"> -->
 
 <!-- Enhanced Bundle Loader with Dependency Management -->
 <script>
@@ -251,6 +251,55 @@
     }
     
     /**
+     * 动态发现 bundles 目录下的文件
+     * 从 manifest.json 加载文件列表
+     */
+    async discoverBundles() {
+      console.log('[Bundle Loader] 🔍 开始动态发现 bundle 文件...');
+      
+      try {
+        const response = await fetch('bundles/manifest.json');
+        if (response.ok) {
+          const manifest = await response.json();
+          console.log('[Bundle Loader] ✓ 从 manifest.json 加载文件列表:', manifest.fileCount, '个文件');
+          return manifest.files || [];
+        } else {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+      } catch (error) {
+        console.error('[Bundle Loader] ❌ 无法加载 manifest.json:', error.message);
+        console.error('[Bundle Loader] 请运行: node h5App-js/src/resources/generate-manifest.js');
+        throw new Error('Bundle manifest 加载失败，无法继续');
+      }
+    }
+    
+    /**
+     * 根据规则对 bundle 文件排序
+     */
+    sortBundlesByRules(bundles) {
+      const rules = this.config.dynamicLoadingOrder || [];
+      
+      const sorted = [];
+      const remaining = [...bundles];
+      
+      // 按照规则顺序匹配
+      for (const rule of rules) {
+        for (let i = remaining.length - 1; i >= 0; i--) {
+          if (rule.test(remaining[i])) {
+            sorted.push(remaining[i]);
+            remaining.splice(i, 1);
+          }
+        }
+      }
+      
+      // 未匹配的文件放在最后
+      sorted.push(...remaining);
+      
+      console.log('[Bundle Loader] 📋 排序后的加载顺序:', sorted);
+      return sorted;
+    }
+    
+    /**
      * 智能加载公共依赖
      * 最大化并行加载以提升性能
      */
@@ -259,7 +308,10 @@
       this.stats.startTime = Date.now();
       this.performanceMarks.bundlesStart = performance.now();
       
-      const dependencies = this.config.commonDependencies;
+      // 动态发现并排序
+      const discovered = await this.discoverBundles();
+      const dependencies = this.sortBundlesByRules(discovered);
+      
       this.stats.totalBundles += dependencies.length;
       
       try {

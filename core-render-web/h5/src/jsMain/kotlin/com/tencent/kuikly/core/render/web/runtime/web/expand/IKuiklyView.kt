@@ -1,4 +1,9 @@
+@file:JsExport
+
 package com.tencent.kuikly.core.render.web.runtime.web.expand
+
+import kotlin.js.JsExport
+import kotlin.js.JsName
 
 import com.tencent.kuikly.core.render.web.IKuiklyRenderViewLifecycleCallback
 import com.tencent.kuikly.core.render.web.ktx.SizeI
@@ -6,6 +11,8 @@ import com.tencent.kuikly.core.render.web.ktx.SizeI
 /**
  * Kuikly View granularity level integration class, if it's page-level integration, use [KuiklyRenderViewDelegator]
  */
+@JsExport
+@JsName("IKuiklyView")
 interface IKuiklyView {
     /**
      * Initialize KuiklyView

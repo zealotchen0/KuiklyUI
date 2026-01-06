@@ -2,6 +2,15 @@
 
 JavaScript 实现的 Kuikly H5 应用，通过集成编译后的 Kotlin/JS 核心渲染库实现完整的 Kuikly 渲染能力。
 
+## ✨ 特性
+
+- 🎯 **委托模式集成**：通过委托模式无缝集成 Kotlin/JS 核心渲染引擎
+- 📦 **智能代码分包**：基于 Webpack 的自动代码分包优化，支持长期缓存
+- 🔄 **动态 Bundle 加载**：自动扫描和加载依赖文件，无需手动配置
+- 🚀 **热重载开发**：修改 JavaScript 代码即时生效，开发体验流畅
+- 🛠️ **完整工具链**：提供一键式编译、复制、生成脚本，自动化开发流程
+- 📝 **TypeScript 支持**：完整的类型定义文件，IDE 智能提示
+
 ## 🚀 快速开始
 
 ### 📋 常用 npm 命令
@@ -14,6 +23,7 @@ JavaScript 实现的 Kuikly H5 应用，通过集成编译后的 Kotlin/JS 核�
 | `npm run rebuild-kotlin:dev` | 编译并复制 Kotlin/JS 核心库（开发版本） |
 | `npm run build-bundles HelloWorldPage,000` | 编译指定页面 Bundle |
 | `npm run build-bundles:all` | 编译所有页面 Bundle |
+| `npm run generate-manifest` | 生成 Bundle manifest 文件 |
 | `npm run copy-libs` | 仅复制 Kotlin/JS 核心库（生产版本，不编译） |
 | `npm run copy-libs:dev` | 仅复制 Kotlin/JS 核心库（开发版本，不编译） |
 
@@ -33,7 +43,7 @@ npm run build-bundles HelloWorldPage,000
 npm run dev
 ```
 
-访问 http://localhost:8080
+访问 http://localhost:8080/?page_name=xxx
 
 ### 快速开始（推荐的开发流程）
 
@@ -104,42 +114,113 @@ cd ..
 # 复制到 h5App-js
 cd h5App-js
 cp ../demo/build/dist/js/developmentExecutable/*.bundle.js src/bundles/
+
+# 生成 manifest.json
+node scripts/generate-manifest.js
 ```
 
-编译产物说明：
-- `页面名.bundle.js`：页面的完整渲染代码（包含 UI 和业务逻辑）
-- `composeResources/`：Compose 资源文件
+#### 编译产物说明
 
-### Bundle依赖管理
+Bundle 文件采用 **Webpack 智能代码分包**策略，自动将代码拆分为多个文件以优化加载性能：
 
-多页面bundles支持自动依赖检查，通过 `src/resources/bundle-config.js` 配置特殊依赖：
+| 文件类型 | 命名规则 | 说明 | 缓存策略 |
+|---------|---------|------|---------|
+| **Runtime** | `runtime.bundle.js` | Webpack 运行时代码 | 长期缓存 |
+| **Kotlin 核心** | `kotlin-stdlib.kotlin_k.bundle.js` | Kotlin 标准库核心 | 长期缓存 |
+| **Kotlin 标准库** | `kotlin-stdlib.kotlin_kotlin-*.bundle.js` | Kotlin 标准库模块 | 长期缓存 |
+| **KuiklyCore 基础** | `kotlin-stdlib.kotlin_KuiklyCore-*.bundle.js` | KuiklyCore 框架模块 | 中期缓存 |
+| **页面代码** | `[PageName].bundle.js` | 页面业务逻辑 | 频繁更新 |
+| **公共依赖** | `vendors.bundle.js` | node_modules 依赖 | 长期缓存 |
+| **公共代码** | `common.bundle.js` | 页面间共享代码 | 中期缓存 |
+| **Manifest** | `manifest.json` | Bundle 文件清单（自动生成） | 每次更新 |
+| **资源文件** | `composeResources/` | Compose 资源 | 按需缓存 |
+
+**分包优势：**
+- ✅ **长期缓存**：Kotlin 标准库等基础文件很少变化，可以长期缓存
+- ✅ **按需更新**：修改页面代码只需更新对应的 bundle 文件
+- ✅ **并行加载**：多个小文件可以并行下载，提升加载速度
+- ✅ **共享复用**：多个页面共享相同的基础库文件
+
+### Bundle 依赖管理
+
+#### 🔍 动态发现机制
+
+项目采用**智能动态发现机制**，无需手动维护 bundle 文件列表：
+
+```
+┌─────────────────────────────────────────┐
+│  1. 编译时自动扫描                        │
+│     npm run build-bundles               │
+│     ↓                                   │
+│  2. 生成 manifest.json                   │
+│     scripts/generate-manifest.js        │
+│     ↓                                   │
+│  3. 运行时读取清单                        │
+│     动态加载 bundle 文件                  │
+│     ↓                                   │
+│  4. 按规则排序加载                        │
+│     bundle-config.js 定义顺序            │
+└─────────────────────────────────────────┘
+```
+
+#### 📋 工作流程
+
+1. **自动扫描**：`npm run build-bundles` 时自动扫描 `src/bundles/` 目录
+2. **生成清单**：`generate-manifest.js` 生成 `manifest.json` 文件
+3. **智能排序**：通过 `bundle-config.js` 中的正则规则定义加载顺序
+4. **动态加载**：运行时根据清单和规则自动加载所需文件
+5. **自动适应**：文件名变化时，重新构建即可自动更新
+
+#### ⚙️ 加载配置（bundle-config.js）
 
 ```javascript
-// bundle-config.js 示例
 window.BundleConfig = {
-  // 特殊依赖配置
-  specialDependencies: {
-    'PageA': ['common-utils.bundle.js'],
-    'PageB': ['shared-components.bundle.js', 'common-utils.bundle.js']
+  // 📦 加载顺序规则（按优先级排序的正则表达式）
+  dynamicLoadingOrder: [
+    /^runtime\.bundle\.js$/,                     // 1. Webpack runtime
+    /^kotlin-stdlib\.kotlin_k\.bundle\.js$/,     // 2. Kotlin 核心
+    /^kotlin-stdlib\.kotlin_kotlin-.*\.js$/,     // 3. Kotlin 标准库
+    /^kotlin-stdlib\.kotlin_KuiklyCore-.*\.js$/, // 4. KuiklyCore 框架
+    /^vendors\.bundle\.js$/,                     // 5. 第三方依赖
+    /^common\.bundle\.js$/                       // 6. 公共代码
+  ],
+  
+  // 🎯 页面特殊依赖配置
+  pageDependencies: {
+    'SpecialPage': ['extra-lib.bundle.js']
   },
-  // 全局依赖（所有页面都需要）
-  globalDependencies: ['runtime.bundle.js']
+  
+  // 🚀 性能优化配置
+  enableParallelLoading: true,  // 启用并行加载
+  loadTimeout: 10000            // 加载超时时间（毫秒）
 };
 ```
 
-⚠️ **重要提示：**
-- Bundle 文件会自动复制到 `src/bundles/` 目录
-- 多页面bundles会**自动检查依赖**，确保正确的加载顺序
-- 特殊依赖可在 `src/resources/bundle-config.js` 中配置
-- 无需手动在 HTML 中添加 `<script>` 标签
-- Bundle 加载顺序：Kotlin 核心库 → Bundle 文件 → 应用代码
+#### 手动生成 manifest（仅在需要时）
+
+如果需要单独生成 manifest.json：
+
+```bash
+npm run generate-manifest
+```
+
+#### ✅ 关键特性
+
+| 特性 | 说明 |
+|------|------|
+| ✅ **全自动化** | `npm run build-bundles` 自动生成 manifest.json |
+| ✅ **动态发现** | Bundle 列表从 manifest.json 动态读取 |
+| ✅ **智能排序** | 正则规则确保正确的依赖加载顺序 |
+| ✅ **自动适应** | 文件名变化时重新构建即可更新 |
+| ✅ **并行优化** | 支持并行加载提升性能 |
+| ⚠️ **依赖清单** | 必须有 manifest.json 才能运行 |
 
 ### 4. 启动开发服务器
 ```bash
 npm run dev
 ```
 
-访问 http://localhost:8080
+访问 http://localhost:8080/?page_name=xxx
 
 ### 5. 构建生产版本
 ```bash
@@ -167,6 +248,10 @@ h5App-js/
 │   ├── KuiklyWebRenderViewDelegator.js  # 委托实现
 │   └── index.js            # 应用入口
 ├── scripts/                 # 构建脚本（通过 npm 命令调用）
+│   ├── build-and-copy-bundles.sh       # 编译并复制页面 Bundle
+│   ├── copy-kotlin-libs.sh             # 复制 Kotlin 核心库
+│   ├── rebuild-kotlin-and-copy.sh      # 编译并复制 Kotlin 核心库
+│   └── generate-manifest.js            # 生成 bundle manifest 文件
 └── package.json
 ```
 
@@ -318,6 +403,7 @@ npm run build-bundles:all
 - ✅ 自动清理旧产物
 - ✅ 编译指定页面或全部页面
 - ✅ 自动复制 bundle 文件和资源
+- ✅ **自动生成 manifest.json**
 - ✅ 显示详细的编译信息
 
 ### 修改 JavaScript 代码后
@@ -325,12 +411,32 @@ npm run build-bundles:all
 
 ## ⚠️ 注意事项
 
-1. **自动依赖检查**：多页面bundles会自动检查和管理依赖关系
-2. **依赖配置**：特殊依赖需在 `src/resources/bundle-config.js` 中配置
-3. **类型转换**：JS 对象需转换为 Kotlin 类型（Map、Pair）
-4. **全局变量**：Kotlin 类会挂载到 `window` 对象
-5. **@JsExport**：已为关键类添加 `@JsExport` 和 `@JsName` 注解
-6. **TypeScript 支持**：编译产物包含 `.d.ts` 类型定义文件，支持 IDE 自动补全
+### 🔧 构建相关
+
+| 注意点 | 说明 |
+|--------|------|
+| **动态依赖发现** | Bundle 文件通过 `manifest.json` 动态发现和加载 |
+| **自动化流程** | `npm run build-bundles` 自动生成 manifest.json |
+| **依赖排序** | 加载顺序通过 `bundle-config.js` 正则规则定义 |
+| **文件名变化** | Webpack 使用确定性 ID，文件名可能变化，重新构建自动适应 |
+| **代码分包** | Webpack 自动分包优化，无需手动配置 |
+
+### 📝 代码相关
+
+| 注意点 | 说明 |
+|--------|------|
+| **类型转换** | JS 对象需转换为 Kotlin 类型（Map、Pair） |
+| **全局变量** | Kotlin 类通过 `@JsExport` 挂载到 `window` 对象 |
+| **TypeScript 支持** | 编译产物包含 `.d.ts` 类型定义文件 |
+| **异步加载** | Bundle 采用异步加载，注意处理加载时序 |
+
+### 🎯 Kotlin/JS 相关
+
+| 注意点 | 说明 |
+|--------|------|
+| **@JsExport** | 关键类已添加 `@JsExport` 和 `@JsName` 注解 |
+| **模块系统** | 使用 UMD 模块格式，兼容多种环境 |
+| **依赖版本** | 编译前需确保 h5 模块依赖 base（implementation） |
 
 ## 🔧 npm 脚本详解
 
@@ -350,40 +456,174 @@ npm run build-bundles:all
 ### 页面 Bundle 相关
 - `npm run build-bundles <页面名>` - 编译指定页面（如：`npm run build-bundles HelloWorldPage,000`）
 - `npm run build-bundles:all` - 编译所有页面
+- `npm run generate-manifest` - 生成 Bundle manifest 文件
 
 > 💡 **提示**：所有 npm 脚本内部都调用了 `scripts/` 目录下的 Shell 脚本，如需了解详细执行逻辑，可以查看对应的 `.sh` 文件。
 
 ## 🔧 故障排查
 
-### 编译失败
-**原因：** Kotlin 代码存在语法错误或依赖问题
+### 📦 编译相关
 
-**解决：**
-1. 检查控制台输出的错误信息
-2. 修复 Kotlin 代码错误
-3. 重新运行 npm 命令
+<details>
+<summary><b>❌ 编译失败</b></summary>
 
-### 找不到 Bundle 文件
-**原因：** 编译时未指定正确的页面名称
+**症状：** Gradle 编译报错或构建失败
 
-**解决：**
-1. 检查 `demo/src/commonMain/assets/` 目录下的页面名称
-2. 确保页面名称拼写正确
-3. 使用正确的页面名称重新编译
+**可能原因：**
+- Kotlin 代码存在语法错误
+- 依赖配置问题
+- Gradle 缓存损坏
 
-### Module not loaded 错误
-**原因：** Kotlin/JS 模块加载顺序不正确或未加载完成
+**解决方案：**
+1. 检查控制台输出的详细错误信息
+2. 清理 Gradle 缓存：`./gradlew clean`
+3. 检查 `build.gradle.kts` 中的依赖配置
+4. 确保 h5 模块使用 `implementation` 依赖 base 模块
+5. 修复代码错误后重新运行 `npm run build-bundles`
 
-**解决：**
-1. 确认 HTML 中脚本加载顺序正确（base → h5 → bundles）
-2. 清空浏览器缓存后重试
-3. 检查控制台是否有 404 错误
+</details>
+
+<details>
+<summary><b>❌ 找不到 Bundle 文件</b></summary>
+
+**症状：** 编译成功但找不到生成的 bundle 文件
+
+**可能原因：**
+- 页面名称拼写错误
+- 编译产物路径不正确
+- 复制脚本失败
+
+**解决方案：**
+1. 检查页面名称：查看 `demo/src/commonMain/assets/` 目录
+2. 确认编译产物：检查 `demo/build/dist/js/developmentExecutable/`
+3. 验证复制结果：检查 `h5App-js/src/bundles/` 目录
+4. 重新运行完整流程：`npm run build-bundles PageName`
+
+</details>
+
+### 🌐 运行时相关
+
+<details>
+<summary><b>❌ Module not loaded 错误</b></summary>
+
+**症状：** 浏览器控制台报 "Module not loaded" 错误
+
+**可能原因：**
+- Kotlin/JS 模块加载顺序不正确
+- 模块未加载完成就被调用
+- 缺少必要的依赖文件
+
+**解决方案：**
+1. 检查 HTML 中脚本加载顺序是否正确
+2. 确认核心库文件存在：`src/libs/KuiklyCore-render-web-h5.js`
+3. 清空浏览器缓存（Ctrl + Shift + Delete）
+4. 查看 Network 面板，确认没有 404 错误
+5. 检查 bundle-config.js 的加载顺序配置
+
+</details>
+
+<details>
+<summary><b>❌ Bundle 加载失败</b></summary>
+
+**症状：** 页面无法正常显示，控制台报 bundle 加载错误
+
+**可能原因：**
+- manifest.json 不存在或过期
+- Bundle 文件路径错误
+- 文件名变化但清单未更新
+
+**解决方案：**
+1. 重新生成 manifest：`npm run generate-manifest`
+2. 检查文件存在：`src/bundles/manifest.json`
+3. 验证文件内容：确认 bundle 列表正确
+4. 重新编译 bundle：`npm run build-bundles PageName`
+5. 清空浏览器缓存并刷新
+
+</details>
+
+<details>
+<summary><b>❌ 页面白屏或无响应</b></summary>
+
+**症状：** 页面显示空白或无法交互
+
+**可能原因：**
+- JavaScript 执行错误
+- Bundle 文件损坏
+- 页面数据格式错误
+
+**解决方案：**
+1. 打开浏览器开发者工具（F12）
+2. 查看 Console 面板的错误信息
+3. 检查 Network 面板的资源加载状态
+4. 验证页面参数：URL 中的 `page_name` 参数
+5. 重新编译相关 bundle 文件
+
+</details>
+
+### 🛠️ 开发环境
+
+<details>
+<summary><b>❌ 热重载不工作</b></summary>
+
+**症状：** 修改代码后页面不自动刷新
+
+**可能原因：**
+- Webpack Dev Server 配置问题
+- 端口被占用
+- 浏览器缓存过强
+
+**解决方案：**
+1. 重启开发服务器：停止后重新 `npm run dev`
+2. 检查端口占用：`lsof -i :8080`
+3. 修改端口：在 `webpack.config.js` 中配置
+4. 禁用浏览器缓存：开发者工具 → Network → Disable cache
+
+</details>
+
+### 💡 快速诊断
+
+运行以下命令进行快速诊断：
+
+```bash
+# 检查 manifest.json
+cat src/bundles/manifest.json
+
+# 列出所有 bundle 文件
+ls -lh src/bundles/*.bundle.js
+
+# 检查核心库文件
+ls -lh src/libs/
+
+# 重新生成所有文件
+npm run rebuild-kotlin && npm run build-bundles:all
+```
 
 ## 💡 性能优化建议
 
-- ✅ **编译指定页面**：使用 `npm run build-bundles HelloWorldPage,000` 只编译修改的页面，而不是编译所有页面
-- ✅ **并行开发**：核心库和页面可以分别编译，互不影响
-- ✅ **利用热重载**：修改 JavaScript 代码时会自动重载，无需手动刷新
+### 🚀 编译优化
+
+| 优化项 | 方法 | 效果 |
+|--------|------|------|
+| **增量编译** | `npm run build-bundles PageName` | 只编译修改的页面 |
+| **并行开发** | 核心库和页面分别编译 | 互不影响，提升效率 |
+| **开发模式** | `npm run rebuild-kotlin:dev` | 包含 source map，便于调试 |
+
+### 📦 Bundle 优化
+
+| 优化项 | 说明 | 启用方式 |
+|--------|------|---------|
+| **代码分包** | Webpack 自动分包 | 已默认启用 |
+| **长期缓存** | 基础库文件名固定 | 已配置 |
+| **并行加载** | 多个 bundle 并行下载 | `enableParallelLoading: true` |
+| **按需加载** | 只加载当前页面所需 bundle | 已实现 |
+
+### 🔧 开发体验
+
+| 优化项 | 方法 | 效果 |
+|--------|------|------|
+| **热重载** | 修改 JS 代码自动生效 | 无需手动刷新 |
+| **TypeScript** | 使用 `.d.ts` 类型定义 | IDE 智能提示 |
+| **错误提示** | 完善的日志系统 | 快速定位问题 |
 
 ## 📚 自定义扩展
 

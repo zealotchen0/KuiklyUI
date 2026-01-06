@@ -12,7 +12,8 @@
     "copy-libs": "./scripts/copy-kotlin-libs.sh",
     "copy-libs:dev": "./scripts/copy-kotlin-libs.sh dev",
     "build-bundles": "./scripts/build-and-copy-bundles.sh",
-    "build-bundles:all": "./scripts/build-and-copy-bundles.sh"
+    "build-bundles:all": "./scripts/build-and-copy-bundles.sh",
+    "generate-manifest": "node scripts/generate-manifest.js"
   },
   "keywords": [
     "kuikly",

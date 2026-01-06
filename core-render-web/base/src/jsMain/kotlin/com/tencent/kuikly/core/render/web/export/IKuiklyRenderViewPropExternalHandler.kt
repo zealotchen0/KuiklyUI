@@ -1,8 +1,10 @@
 package com.tencent.kuikly.core.render.web.export
 
-/**
- * [IKuiklyRenderViewExport] Custom Prop Handler
- */
+import kotlin.js.JsExport
+import kotlin.js.JsName
+
+
+@JsExport
 interface IKuiklyRenderViewPropExternalHandler {
 
     /**
@@ -14,6 +16,7 @@ interface IKuiklyRenderViewPropExternalHandler {
      *
      * @return should handle prop
      */
+    @JsName("setViewExternalProp")
     fun setViewExternalProp(
         renderViewExport: IKuiklyRenderViewExport,
         propKey: String,
@@ -28,5 +31,6 @@ interface IKuiklyRenderViewPropExternalHandler {
      *
      * @return  handle prop reset yes or no
      */
+    @JsName("resetViewExternalProp")
     fun resetViewExternalProp(renderViewExport: IKuiklyRenderViewExport, propKey: String): Boolean
 }
